@@ -1168,3 +1168,45 @@ as a source of conclusions.
 
 Pipeline itself verified working: generate -> arithmetic filter -> event study
 -> baseline -> multiple-comparison correction -> verdict, with nothing armed.
+
+## 2026-11-16 ~17:10 — Three positions, one and a half bets
+
+Switched the desk to `index_hold` (long equity indices, no timing claim) and it
+opened DAX, FTSE and CAC. Checked afterwards whether those were three bets or
+one bet with three tickets. Daily returns, 124 sessions:
+
+```
+            DAX   FTSE    CAC  NIFTY    SPY    QQQ
+DAX        1.00   0.36   0.83  -0.09   0.15   0.14
+FTSE       0.36   1.00   0.34  -0.11   0.01   0.03
+CAC        0.83   0.34   1.00   0.02   0.06   0.04
+NIFTY     -0.09  -0.11   0.02   1.00  -0.15  -0.12
+SPY        0.15   0.01   0.06  -0.15   1.00   0.93
+QQQ        0.14   0.03   0.04  -0.12   0.93   1.00
+
+average correlation among the three held: 0.51
+effective independent bets: ~1.49 of 3
+```
+
+DAX and CAC at 0.83 are substitutes. The desk was paying three round trips for
+about one and a half bets. Closed CAC, keeping DAX (eurozone) and FTSE (0.35 —
+genuinely separate).
+
+**SPY/QQQ at 0.93 was the bigger exposure.** The US session opens at 20:00 IST
+tonight and `index_hold` would have taken both, which is the same bet twice at
+double the cost. Added a `SUBSTITUTE_GROUP` guard keyed on the measurements
+above: eurozone (DAX/CAC), us_broad (SPY/QQQ), majorcoin (BTC/ETH). FTSE is
+deliberately NOT grouped, and NIFTY is grouped with nothing — at -0.15 to +0.02
+against everything else it is the only real diversifier in the universe, and it
+arrives when the NSE opens tomorrow.
+
+Two bugs in my own guard, both found by running it:
+1. It tested the group BEFORE checking the signal was otherwise actionable, so
+   it logged "skip DAX: already hold a eurozone position" against DAX itself —
+   the position that WAS the eurozone holding.
+2. It logged on every cycle. A standing refusal is now reported once.
+
+**CAC's exit is worth recording on its own.** Price moved in our favour and the
+trade still lost: gross +Rs 22.51, charges Rs 73.77, net **-Rs 51.26**. That is
+the ~0.05% round-trip cost the geometry map measured, arriving in the live
+ledger exactly as predicted. Being right about direction is not sufficient.

@@ -77,6 +77,21 @@ COOLDOWN_SEC = float(os.environ.get("ARGONA_COOLDOWN_SEC", "180"))  # stand down
 # whole point of the number when it is compared against an annualised IV.
 _BARS_PER_YEAR = {"crypto": 24 * 365, "india": 6.25 * 250, "us": 6.5 * 252}
 
+# Instruments that are substitutes rather than separate bets. Measured on 124
+# sessions of daily returns:
+#     DAX <-> CAC   0.83      SPY <-> QQQ   0.93
+#     DAX <-> FTSE  0.36      CAC <-> FTSE  0.34
+#     NIFTY <-> everything  -0.15 to +0.02
+# Holding DAX and CAC together gave three positions worth about 1.49
+# independent bets, so the desk was paying three round trips for one and a half
+# bets. SPY and QQQ at 0.93 would be worse. Only genuinely redundant pairs are
+# grouped: FTSE stays separate at ~0.35, and NIFTY is the real diversifier.
+SUBSTITUTE_GROUP = {
+    "DAX": "eurozone", "CAC": "eurozone",
+    "SPY": "us_broad", "QQQ": "us_broad",
+    "BTC": "majorcoin", "ETH": "majorcoin",
+}
+
 
 def _realised_vol(df, source: str) -> float | None:
     """Annualised realised volatility from the 1h closes already in hand.
@@ -112,6 +127,9 @@ class Engine:
         self.sae = get_sae()
         self.signals: list[dict] = []   # last cycle's signals (for snapshot)
         self._cooldown_until: dict[str, float] = {}  # per-underlying stand-down after a stop
+        # Remembers which substitute-group skip has already been logged for a
+        # symbol, so a standing refusal is reported once instead of every cycle.
+        self._sub_skip_logged: dict[str, str] = {}
         self._ohlc_cache: dict[str, tuple[float, object]] = {}  # symbol -> (ts, df)
         self.pair_state: dict = {}
 
@@ -221,6 +239,8 @@ class Engine:
         # record out of nothing.
         signals: list[dict] = []
         open_underlyings = {t["underlying"] for t in state.open_trades()}
+        open_groups = {SUBSTITUTE_GROUP.get(s) for s in open_underlyings}
+        open_groups.discard(None)
         # Which venues the desk is allowed to trade. Empty/absent means all of
         # them, so existing behaviour is unchanged when the key was never set.
         allowed = set(state.get_meta("sources", []) or [])
@@ -296,11 +316,27 @@ class Engine:
             signals.append(sigd)
 
             # 3) Act on a TAKE.
-            if (sig.take and sig.option is not None and feats is not None
-                    and sig.underlying not in open_underlyings
-                    and len(state.open_trades()) < min(MAX_OPEN, getattr(strat, 'max_concurrent', MAX_OPEN))):
+            # The substitute check runs only on a signal that would OTHERWISE
+            # be acted on. Checking it first logged "skip DAX: already hold a
+            # eurozone position" against DAX itself — the position that WAS the
+            # eurozone holding — and did it on every cycle.
+            actionable = (sig.take and sig.option is not None and feats is not None
+                          and sig.underlying not in open_underlyings
+                          and len(state.open_trades())
+                              < min(MAX_OPEN, getattr(strat, "max_concurrent", MAX_OPEN)))
+            grp = SUBSTITUTE_GROUP.get(sig.underlying)
+            if actionable and grp is not None and grp in open_groups:
+                if self._sub_skip_logged.get(sig.underlying) != grp:
+                    self._sub_skip_logged[sig.underlying] = grp
+                    state.append_activity("INFO", {
+                        "msg": (f"skip {sig.underlying}: already hold a '{grp}' "
+                                f"position — they move together, so a second one "
+                                f"is the same bet twice, not diversification")})
+            elif actionable:
                 self._open_trade(u, sig, feats, strat, kpis.balance)
                 open_underlyings.add(sig.underlying)
+                if grp is not None:
+                    open_groups.add(grp)
 
         self.signals = signals
         state.record_equity(round(state.compute_kpis().balance, 4), round(net_cycle, 4))
