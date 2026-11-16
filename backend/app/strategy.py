@@ -94,6 +94,9 @@ class Strategy:
     # Max concurrent positions for this strategy. The scalp skill caps
     # at 3; the desk default is wider.
     max_concurrent: int = 6
+    # Restrict the scan to broad indices (UNIVERSE entries flagged `index`).
+    # Only a beta strategy needs this; everything else trades the full book.
+    index_only: bool = False
     desc: str = ""
 
 
@@ -220,6 +223,7 @@ REGISTRY: dict[str, Strategy] = {
         # per instrument per day is the cap.
         cooldown_sec=86400.0,
         max_concurrent=4,
+        index_only=True,
         max_cost_pct=1.0,
         desc="HOLD, not a strategy: long equity indices and sit. Captures market "
              "beta (~+0.03%/day), which is NOT edge and NOT reliable over days. "

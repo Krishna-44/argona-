@@ -53,20 +53,20 @@ MIN_CRYPTO_NOTIONAL = float(os.environ.get("ARGONA_MIN_CRYPTO_NOTIONAL", "25000"
 # consequence: an unchanged dollar premium still moves the rupee P&L when the
 # rupee moves, which is exactly what a rupee-funded account would experience.
 UNIVERSE = [
-    {"symbol": "NIFTY",     "source": "india",  "label": "Nifty 50"},
-    {"symbol": "BANKNIFTY", "source": "india",  "label": "Bank Nifty"},
-    {"symbol": "FINNIFTY",  "source": "india",  "label": "Fin Nifty"},
-    {"symbol": "SPY",       "source": "us",     "label": "S&P 500 ETF"},
-    {"symbol": "QQQ",       "source": "us",     "label": "Nasdaq 100 ETF"},
+    {"symbol": "NIFTY",     "source": "india",  "label": "Nifty 50", "index": True},
+    {"symbol": "BANKNIFTY", "source": "india",  "label": "Bank Nifty", "index": True},
+    {"symbol": "FINNIFTY",  "source": "india",  "label": "Fin Nifty", "index": True},
+    {"symbol": "SPY",       "source": "us",     "label": "S&P 500 ETF", "index": True},
+    {"symbol": "QQQ",       "source": "us",     "label": "Nasdaq 100 ETF", "index": True},
     {"symbol": "NVDA",      "source": "us",     "label": "Nvidia"},
     {"symbol": "TSLA",      "source": "us",     "label": "Tesla"},
     {"symbol": "BTC",       "source": "crypto", "label": "Bitcoin"},
     {"symbol": "ETH",       "source": "crypto", "label": "Ethereum"},
     # Europe covers 13:30-22:00 IST — the window where NSE has shut (15:30)
     # and the US has not opened (20:00), which the desk previously sat out.
-    {"symbol": "DAX",       "source": "europe", "label": "DAX 40"},
-    {"symbol": "FTSE",      "source": "europe", "label": "FTSE 100"},
-    {"symbol": "CAC",       "source": "europe", "label": "CAC 40"},
+    {"symbol": "DAX",       "source": "europe", "label": "DAX 40", "index": True},
+    {"symbol": "FTSE",      "source": "europe", "label": "FTSE 100", "index": True},
+    {"symbol": "CAC",       "source": "europe", "label": "CAC 40", "index": True},
     # Globex metals/energy run nearly 23h, so they cover the gap too.
     {"symbol": "GOLD",      "source": "commodity", "label": "Gold"},
     {"symbol": "CRUDE",     "source": "commodity", "label": "Crude Oil"},
@@ -79,11 +79,11 @@ UNIVERSE = [
     # Asia opens BEFORE the NSE -- ASX 04:30 IST, Tokyo and Seoul 05:30 --
     # so it covers the early window that was crypto-only, not just the
     # NSE overlap.
-    {"symbol": "NIKKEI",    "source": "asia",   "label": "Nikkei 225"},
-    {"symbol": "HSI",       "source": "asia",   "label": "Hang Seng"},
-    {"symbol": "KOSPI",     "source": "asia",   "label": "KOSPI"},
-    {"symbol": "ASX",       "source": "asia",   "label": "ASX 200"},
-    {"symbol": "STI",       "source": "asia",   "label": "Straits Times"},
+    {"symbol": "NIKKEI",    "source": "asia",   "label": "Nikkei 225", "index": True},
+    {"symbol": "HSI",       "source": "asia",   "label": "Hang Seng", "index": True},
+    {"symbol": "KOSPI",     "source": "asia",   "label": "KOSPI", "index": True},
+    {"symbol": "ASX",       "source": "asia",   "label": "ASX 200", "index": True},
+    {"symbol": "STI",       "source": "asia",   "label": "Straits Times", "index": True},
 ]
 
 # Yahoo ticker and quote currency for the venues served by yf_underlying().

@@ -244,7 +244,16 @@ class Engine:
         # Which venues the desk is allowed to trade. Empty/absent means all of
         # them, so existing behaviour is unchanged when the key was never set.
         allowed = set(state.get_meta("sources", []) or [])
+        # A strategy whose premise is market BETA must not be handed single
+        # names. `sources: us` includes NVDA and TSLA beside SPY and QQQ, and
+        # index_hold duly bought NVDA at the US open -- a single stock carries
+        # a large idiosyncratic component (one earnings call, one cancelled
+        # order) that an index averages away. That is not the risk this
+        # strategy claims to take.
+        index_only = bool(getattr(strat, "index_only", False))
         for item in options.get_universe():
+            if index_only and not item.get("index"):
+                continue
             if allowed and item.get("source") not in allowed:
                 continue
             if not options.market_open_for(item["source"], item["symbol"]):
