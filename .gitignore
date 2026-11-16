@@ -1,0 +1,42 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+backend/data/*.sqlite
+backend/data/*.sqlite-*
+backend/logs/
+backend/logs.old/
+
+# Node / Next
+web/node_modules/
+web/.next/
+web/out/
+web/.turbo/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+
+# Supervisor + runtime logs at the repo root (backend/logs was already listed,
+# but supervisor.sh writes api.log / web.log / supervisor.log here).
+logs/
+*.log
+
+# Editor / backup files
+*.bak
+supervisor.sh.bak
+
+# Instrument masters: 7MB of regenerable vendor data, refetched on demand.
+backend/data/*.json
+!backend/data/.gitkeep
+
+# Model checkpoints are rebuilt from live trades, not source.
+backend/data/model.json*
+backend/data/sae.json*
+
+# Next.js incremental build cache
+web/tsconfig.tsbuildinfo

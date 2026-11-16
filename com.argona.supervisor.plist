@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.argona.supervisor</string>
+
+  <!-- launchd owns the process, so it survives shell teardown, logout and
+       reboot. The plain nohup+setsid daemon did not: it died Sat 16:07 and
+       the desk was down for 42 hours, missing the weekend and the first
+       57 minutes of Monday's NSE session. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/krishnagoyal/ai-trading-os/supervisor.sh</string>
+    <string>--run</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/krishnagoyal/ai-trading-os</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <!-- KeepAlive:true restarts ANY exit, including the guard's deliberate
+       exit(0) when it finds another supervisor already holding the lock —
+       which turned into a respawn loop that looked like two supervisors
+       fighting. SuccessfulExit:false restarts only on an abnormal exit, so a
+       clean "someone else has it" exit is respected. -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/krishnagoyal/ai-trading-os/logs/supervisor.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/krishnagoyal/ai-trading-os/logs/supervisor.log</string>
+</dict>
+</plist>

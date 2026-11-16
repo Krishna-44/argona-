@@ -1,0 +1,21 @@
+# API
+fastapi==0.162.5
+uvicorn[standard]==0.32.0
+starlette==1.10.0
+pydantic==2.14.3
+httpx==0.27.2
+python-dotenv==1.0.1
+
+# data / modelling
+numpy==2.1.3
+pandas>=2.2
+yfinance>=1.8
+Pillow>=11
+
+# AngelOne SmartAPI (market data only)
+smartapi-python==1.5.5
+pyotp==2.10.0
+websocket-client
+
+# MCP server
+mcp==2.3.0

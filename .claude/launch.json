@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "argona-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "/Users/krishnagoyal/ai-trading-os/web", "--", "--port", "3110"],
+      "port": 3110
+    },
+    {
+      "name": "argona-api",
+      "runtimeExecutable": "/Users/krishnagoyal/ai-trading-os/backend/.venv/bin/uvicorn",
+      "runtimeArgs": [
+        "app.main:app",
+        "--reload",
+        "--port", "4110",
+        "--app-dir", "/Users/krishnagoyal/ai-trading-os/backend"
+      ],
+      "port": 4110
+    }
+  ]
+}
