@@ -1271,3 +1271,54 @@ long — DAX -0.66%, FTSE -0.70%, SPY -1.56% — not this bug. The bug's real
 danger was a stop that could not fire. With the engine dead, a position hitting
 its 4% stop would have exited only when a human noticed, at whatever price that
 happened to be.
+
+## 2026-11-17 12:36 — A 50% win rate at 8.3x leverage lost money, in 70 minutes
+
+Two FINNIFTY futures trades under `rapid_underlying`, one win and one loss,
+back to back:
+
+```
+trade 30  TP  gross +Rs 2,374.99  charges Rs 498.26  net +Rs 1,876.73
+trade 31  SL  gross -Rs 1,869.44  charges Rs 498.12  net -Rs 2,367.56
+                                                      net -Rs   490.83
+```
+
+One for one, and the pair is down Rs 491. Charges are symmetric: Rs 498
+subtracted from the win and Rs 498 ADDED to the loss. Without them the pair
+makes Rs 506. The cost structure, not the direction calls, decided it.
+
+This is what the break-even arithmetic already said — `rapid_underlying` needs
+**60%**, not 50% — but it is the first time this desk has paid for the lesson
+in real rupees rather than computing it. Worth keeping for that reason.
+
+### Leverage does not improve the ratio, only the speed
+Indian index futures settle at 12% margin, so Rs 2L of margin carries Rs 17L of
+notional — 8.3x. The attraction is obvious: trade 30 turned a **0.17% move**
+into Rs 1,877. The part that is not obvious until it happens is that trade 31
+turned a similar move the other way into Rs 2,368, because the charge lands on
+the notional both times.
+
+Charges paid per strategy, lifetime:
+
+```
+strategy          n   W    net          charges
+underlying_momo   16  6   -Rs 10,869    Rs 2,052
+momentum_scalp     1  0   -Rs  6,399    Rs   270
+scalp_momentum     3  1   -Rs    737    Rs   631
+rapid_underlying   2  1   -Rs    491    Rs   996
+index_hold         2  0   -Rs    399    Rs   153
+```
+
+`rapid_underlying` paid Rs 996 of charges to lose Rs 491 — the charges are
+TWICE the loss. At 8.3x a round trip costs ~Rs 500 against ~Rs 75 for the same
+strategy on Rs 1L of cash notional. Scaling the position scales the charge
+exactly in step, so raising size on a sub-break-even signal buys more cost per
+unit of edge, not more edge.
+
+Asked twice today to double the position size. Declined both times on this
+arithmetic and said so plainly rather than quietly not doing it. The request
+to wait for the three open scalps to settle was accepted by the user, and that
+remains the right call: five settled trades is thin, but it is evidence, while
+four unrealised marks are not.
+
+**Balance Rs 4,81,105.46, 8W/16L.** Still no validated edge anywhere.
