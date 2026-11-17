@@ -18,6 +18,9 @@ import contextlib
 import json
 import logging
 import os
+import time
+
+from fastapi.responses import JSONResponse
 
 from dotenv import load_dotenv
 from pathlib import Path as _Path
@@ -228,9 +231,36 @@ def _strategies() -> dict:
     }
 
 
+# A cycle is ~18s. Five missed cycles is a stall, not a slow fetch.
+STALL_SEC = float(os.environ.get("ARGONA_STALL_SEC", "120"))
+
+
 @app.get("/health")
 async def health():
-    return {"ok": True, "open_trades": state.compute_kpis().open_trades}
+    """Liveness of the ENGINE, not just of the web server.
+
+    The old version returned ok:true whenever FastAPI could answer, so when the
+    cycle thread hung on a blocking fetch (AngelOne's 6.7MB scrip master, the
+    first time the India path woke at the NSE bell) the supervisor saw a
+    healthy API and did nothing. The desk was dead for 50 minutes through the
+    open while every health check passed.
+
+    A cycle takes ~18s. Anything past STALL_SEC means the loop is not running,
+    and saying so with a non-200 is what lets the supervisor act.
+    """
+    last = engine.last_cycle_ts
+    age = (time.time() - last) if last else None
+    stalled = age is not None and age > STALL_SEC
+    body = {
+        "ok": not stalled,
+        "open_trades": state.compute_kpis().open_trades,
+        "seconds_since_cycle": round(age, 1) if age is not None else None,
+        "stall_threshold_sec": STALL_SEC,
+    }
+    if stalled:
+        body["error"] = f"engine has not completed a cycle in {age:.0f}s"
+        return JSONResponse(body, status_code=503)
+    return body
 
 
 @app.get("/snapshot")

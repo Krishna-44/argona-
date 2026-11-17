@@ -71,7 +71,14 @@ def nfo_scrips(force: bool = False) -> list[dict]:
         c = _load_cache()
         if c is not None:
             return c
-    r = httpx.get(SCRIP_URL, timeout=120)
+    # 30s, not 120. This is a 6.7MB download reached from inside the trading
+    # cycle, which runs every ~18s, so a 120s budget let one slow fetch block
+    # the engine for longer than six cycles. It stalled the desk clean through
+    # the NSE open on 2026-11-17: the India path wakes at the bell, pulls this
+    # file, and nothing else ran for 50 minutes while /health still said OK.
+    # Failing fast and retrying next cycle is strictly better than holding the
+    # loop; both call sites cache, so a miss costs one cycle, not the day.
+    r = httpx.get(SCRIP_URL, timeout=30)
     r.raise_for_status()
     rows = r.json()
     keep = []
@@ -248,7 +255,14 @@ def nse_scrips(force: bool = False) -> list[dict]:
                 return json.loads(CASH_CACHE.read_text())
         except Exception:
             pass
-    r = httpx.get(SCRIP_URL, timeout=120)
+    # 30s, not 120. This is a 6.7MB download reached from inside the trading
+    # cycle, which runs every ~18s, so a 120s budget let one slow fetch block
+    # the engine for longer than six cycles. It stalled the desk clean through
+    # the NSE open on 2026-11-17: the India path wakes at the bell, pulls this
+    # file, and nothing else ran for 50 minutes while /health still said OK.
+    # Failing fast and retrying next cycle is strictly better than holding the
+    # loop; both call sites cache, so a miss costs one cycle, not the day.
+    r = httpx.get(SCRIP_URL, timeout=30)
     r.raise_for_status()
     keep = []
     for d in r.json():

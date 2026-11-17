@@ -126,6 +126,10 @@ class Engine:
         self.model = get_model()
         self.sae = get_sae()
         self.signals: list[dict] = []   # last cycle's signals (for snapshot)
+        # Heartbeat: set at the END of every completed cycle. /health reads it
+        # so a hung cycle thread is visible to the supervisor, which otherwise
+        # only ever saw that FastAPI could still answer.
+        self.last_cycle_ts: float = 0.0
         self._cooldown_until: dict[str, float] = {}  # per-underlying stand-down after a stop
         # Remembers which substitute-group skip has already been logged for a
         # symbol, so a standing refusal is reported once instead of every cycle.
@@ -348,6 +352,7 @@ class Engine:
                     open_groups.add(grp)
 
         self.signals = signals
+        self.last_cycle_ts = time.time()
         state.record_equity(round(state.compute_kpis().balance, 4), round(net_cycle, 4))
         self._emit()
 
