@@ -33,7 +33,18 @@ log = logging.getLogger("argona.scalp")
 CYCLE_SEC = float(os.environ.get("ARGONA_CYCLE_SEC", "12"))
 # KPI refresh is DB-only, so it can run far faster than the trading cycle.
 KPI_TICK_SEC = float(os.environ.get("ARGONA_KPI_TICK_SEC", "1"))
-RISK_PER_TRADE = float(os.environ.get("ARGONA_RISK_PCT", "0.01"))   # 1% of balance at risk
+# 3% of balance at risk per trade, raised from 1% deliberately.
+#
+# This does NOT improve expectancy. Every measured signal on this desk has
+# negative expectancy, and scaling a negative number makes it more negative.
+# What it changes is VARIANCE: at 1% a routine 0.1% move showed up as ~Rs 100
+# and the balance looked frozen; at 3% the same move is visible. Green gets
+# bigger and red gets bigger in exactly the same proportion.
+#
+# The real limits are untouched: MAX_DEPLOYED_PCT caps the book at 80% of
+# capital, and a stop-out still exits at the band rather than running. With
+# three concurrent scalps this means up to ~9% of the book at risk at once.
+RISK_PER_TRADE = float(os.environ.get("ARGONA_RISK_PCT", "0.03"))
 # 10, not 6. This is a slot counter, not the risk limit — MAX_DEPLOYED_PCT
 # (80% of the book) is what actually caps exposure, and per-trade sizing caps
 # each position. At 6 the desk jammed: four long-horizon index_hold positions
