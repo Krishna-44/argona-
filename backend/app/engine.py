@@ -34,7 +34,13 @@ CYCLE_SEC = float(os.environ.get("ARGONA_CYCLE_SEC", "12"))
 # KPI refresh is DB-only, so it can run far faster than the trading cycle.
 KPI_TICK_SEC = float(os.environ.get("ARGONA_KPI_TICK_SEC", "1"))
 RISK_PER_TRADE = float(os.environ.get("ARGONA_RISK_PCT", "0.01"))   # 1% of balance at risk
-MAX_OPEN = int(os.environ.get("ARGONA_MAX_OPEN", "6"))
+# 10, not 6. This is a slot counter, not the risk limit — MAX_DEPLOYED_PCT
+# (80% of the book) is what actually caps exposure, and per-trade sizing caps
+# each position. At 6 the desk jammed: four long-horizon index_hold positions
+# sat in slots for days while scalp_momentum, capped at 3 of its own, could
+# not take a third. The book was 6/6 full on 14% of capital, with Rs 3.16L
+# idle and nothing able to trade.
+MAX_OPEN = int(os.environ.get("ARGONA_MAX_OPEN", "10"))
 SLIPPAGE = float(os.environ.get("ARGONA_SLIPPAGE", "0.01"))         # 1% worse fill than mid
 # Slippage on the UNDERLYING is a different order entirely. 1% of a premium is
 # a realistic option fill; 1% of an index PRICE is ~250 points, which would
