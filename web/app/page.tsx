@@ -4,6 +4,7 @@ import { KpiRow } from "@/components/KpiRow";
 import { EquityChart } from "@/components/EquityChart";
 import { SignalsPanel } from "@/components/SignalsPanel";
 import { OpenTrades } from "@/components/OpenTrades";
+import { LiveScalps } from "@/components/LiveScalps";
 import { TradeLog } from "@/components/TradeLog";
 import { AccountPanel } from "@/components/AccountPanel";
 import { ActivityLog } from "@/components/ActivityLog";
@@ -67,6 +68,7 @@ export default function Page() {
           <section className="deck intl">
             <div className="deck-body intl-grid">
               <div className="col">
+                <LiveScalps trades={snap.open_trades ?? []} />
                 <SignalsPanel signals={snap.signals ?? []} />
                 <ActivityLog events={snap.activity} />
               </div>
