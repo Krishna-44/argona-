@@ -333,10 +333,18 @@ class Engine:
             # be acted on. Checking it first logged "skip DAX: already hold a
             # eurozone position" against DAX itself — the position that WAS the
             # eurozone holding — and did it on every cycle.
+            # Two separate caps. MAX_OPEN is the book-wide limit and counts
+            # everything; a strategy's own max_concurrent counts only ITS
+            # positions. Counting all open trades against the per-strategy cap
+            # meant a 3-position scalp could never fire while four index_hold
+            # positions sat there — a strategy was being blocked by trades it
+            # does not own and cannot close.
+            own_open = sum(1 for t in state.open_trades()
+                           if t.get("strategy") == strat.name)
             actionable = (sig.take and sig.option is not None and feats is not None
                           and sig.underlying not in open_underlyings
-                          and len(state.open_trades())
-                              < min(MAX_OPEN, getattr(strat, "max_concurrent", MAX_OPEN)))
+                          and len(state.open_trades()) < MAX_OPEN
+                          and own_open < getattr(strat, "max_concurrent", MAX_OPEN))
             grp = SUBSTITUTE_GROUP.get(sig.underlying)
             if actionable and grp is not None and grp in open_groups:
                 if self._sub_skip_logged.get(sig.underlying) != grp:
