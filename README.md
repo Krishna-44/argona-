@@ -150,10 +150,15 @@ Config via env: `ARGONA_INITIAL`, `ARGONA_RISK_PCT`, `ARGONA_CYCLE_SEC`,
   execution.
 - A handful of live paper trades proves nothing in either direction. The live
   ledger is for testing the execution path, not for evaluating a strategy.
-- `index_hold`, the current default, is **not a strategy**. It is long equity
-  indices and captures market beta (~+0.03%/day), chosen only because every
-  timing signal measured here has negative expectancy and churn costs ~0.05%
-  per round trip. It is labelled that way in the code.
+- `index_hold` is **not a strategy**. It is long equity indices and captures
+  market beta (~+0.03%/day), and it exists only because every timing signal
+  measured here has negative expectancy while churn costs ~0.05% per round
+  trip. It is labelled that way in the code. Beta runs both ways: held
+  overnight on 2026-11-16 it lost Rs 2,514 as DAX, FTSE and SPY all fell
+  together.
+- The active strategy is set at runtime and persists in the database, so
+  whatever is running is whatever was last selected — the code has no
+  meaningful "default" beyond the fallback used when the key is absent.
 
 ## Licence
 
