@@ -1210,3 +1210,64 @@ Two bugs in my own guard, both found by running it:
 trade still lost: gross +Rs 22.51, charges Rs 73.77, net **-Rs 51.26**. That is
 the ~0.05% round-trip cost the geometry map measured, arriving in the live
 ledger exactly as predicted. Being right about direction is not sufficient.
+
+## 2026-11-17 09:11 — The desk died through the NSE open and every health check passed
+
+The engine stopped completing cycles at 09:11:55, four minutes before the bell,
+and was still dead at 10:01 when I looked. Fifty minutes. The supervisor did
+nothing, the API answered every request, and the dashboard showed yesterday's
+signals as if they were current.
+
+Cycle gaps from the equity table, one row per completed cycle:
+
+```
+before the restart:  21 cycles, median gap 661s (11 min), worst 3110s (52 min)
+after  the restart:  18 cycles, median gap  13s,          worst   50s
+last ten gaps: 13.5 12.9 13.4 12.8 13.3 12.8 13.9 12.8 13.2 13.0
+```
+
+A healthy cycle is ~13-18s. It had been degrading all night before it stopped.
+
+**The stall itself:** the last engine activity in the log is 09:25:31, an
+`httpx.get` for AngelOne's 6.7MB instrument master with `timeout=120`. The
+India code path wakes at the NSE open and pulls that file from inside the
+trading cycle. A 120s budget inside an 18s loop is wrong on its face.
+
+**Why nothing caught it:** `/health` returned `{"ok": true}` whenever FastAPI
+could answer. The cycle runs in a thread via `asyncio.to_thread`, so a hung
+cycle is invisible to the event loop and to anything polling HTTP. The
+supervisor's whole job is to restart a dead desk and it had no way to see one.
+
+Fixed:
+- `engine.last_cycle_ts` set at the end of every completed cycle
+- `/health` reports `seconds_since_cycle` and returns **503** past
+  `ARGONA_STALL_SEC` (120s, about five missed cycles)
+- `supervisor.sh` already uses `curl -f`, which fails on 503, so the restart
+  path works now that there is a signal to act on
+- scrip-master timeout 120s -> 30s at both call sites; both cache, so a miss
+  costs one cycle rather than the day
+
+### Two hypotheses I got wrong, recorded because the method matters
+1. **"Rate limiting."** I grepped for `429` and found 23 hits, called the
+   suspicion confirmed, and was wrong — the pattern was matching ephemeral
+   PORT numbers (`127.0.0.1:61429`). A strict grep for `HTTP Error 429|Too
+   Many Requests|rate limit` returns **0**. There was no throttling.
+2. **"Closed venues were still being fetched every cycle."** Also wrong: the
+   `market_open_for` gate runs BEFORE `get_underlying` and `continue`s, so a
+   shut venue is never fetched.
+
+**What I still do not know:** what caused the gradual slowdown through the
+night. The final stall is explained by the timestamp; the 11-minute median
+before it is not. It cleared completely on restart, which is consistent with
+something accumulating in the old process, but I have no evidence for that and
+will not record a third guess as a cause.
+
+The fix addresses the CONSEQUENCE rather than the cause, and that is the honest
+description of it: whatever makes the loop hang next time, the desk now says so
+and gets restarted instead of sitting dead with a green health check.
+
+**Exposure:** the overnight loss of Rs 2,514 was the market falling while held
+long — DAX -0.66%, FTSE -0.70%, SPY -1.56% — not this bug. The bug's real
+danger was a stop that could not fire. With the engine dead, a position hitting
+its 4% stop would have exited only when a human noticed, at whatever price that
+happened to be.
