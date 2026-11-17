@@ -228,3 +228,14 @@ export async function setStrategy(name: string): Promise<void> {
     body: JSON.stringify({ name }),
   });
 }
+
+/** Toggle RAPID without naming a strategy. The server remembers what was
+ *  running and restores it on the way back, so the toggle cannot clobber a
+ *  selection made elsewhere. */
+export async function setRapid(on: boolean): Promise<void> {
+  await fetch(`/api/control/rapid`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ on }),
+  });
+}

@@ -1,6 +1,6 @@
 "use client";
-import { Kpis, setStrategy } from "@/lib/api";
-import { useEffect, useRef, useState } from "react";
+import { Kpis, setRapid } from "@/lib/api";
+import { useEffect, useState } from "react";
 import { BotsMenu } from "./BotsMenu";
 
 type Session = { source: string; label: string; open: boolean; hours: string };
@@ -22,19 +22,18 @@ export function Header({ kpis, live, strategy, sessions, fx }: {
   // clobbered whatever strategy was actually selected -- scalp_momentum was
   // armed at 11:32 and wiped by a rapid toggle at 11:56 without a trace in
   // the UI. Remember what was running before RAPID and restore exactly that.
-  const preRapid = useRef<string>("underlying_momo");
   async function toggleRapid() {
-    let next: string;
-    if (rapid) {
-      next = preRapid.current;
-    } else {
-      if (effective !== "rapid_underlying" && effective !== "rapid_candle") {
-        preRapid.current = effective;
-      }
-      next = "rapid_underlying";
+    // Ask the server to flip the mode; it owns the memory of what to restore.
+    // The old version POSTed a strategy NAME and kept the previous one in a
+    // ref, which died on reload and could not see a strategy set through the
+    // API — so the toggle silently overwrote it.
+    const turningOn = !rapid;
+    setPending(turningOn ? "rapid_underlying" : null);
+    try {
+      await setRapid(turningOn);
+    } catch {
+      setPending(null);
     }
-    setPending(next);
-    try { await setStrategy(next); } catch { setPending(null); }
   }
   const [uptime, setUptime] = useState("00:00:00");
   useEffect(() => {

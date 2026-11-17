@@ -994,6 +994,52 @@ async def control_close(payload: dict):
             "note": "settles on the next engine cycle at the live mark"}
 
 
+RAPID_VARIANTS = ("rapid_underlying", "rapid_candle")
+
+
+@app.post("/control/rapid")
+async def control_rapid(payload: dict):
+    """Turn RAPID on or off without clobbering the selected strategy.
+
+    The dashboard toggle used to POST a strategy NAME, so it overwrote
+    whatever was active and remembered the previous one only in React state.
+    That memory died on reload and could not see a change made through the
+    API: scalp_momentum was set at 11:29 and the toggle put the desk back on
+    rapid_underlying 51 seconds later, silently, and the next half hour of
+    trading ran on a 60% break-even config instead of the 40.6% one that had
+    been asked for.
+
+    The memory lives here now. Turning RAPID on records what was running;
+    turning it off restores exactly that. The toggle can no longer lose a
+    selection, and an API caller setting a strategy while RAPID is off is
+    never overridden by a later toggle.
+    """
+    want = bool(payload.get("on"))
+    current = state.get_meta("strategy", "momentum_scalp")
+    is_rapid = current in RAPID_VARIANTS
+
+    if want and not is_rapid:
+        # Remember what to come back to, then switch.
+        state.set_meta("pre_rapid_strategy", current)
+        state.set_meta("strategy", "rapid_underlying")
+        state.append_activity("INFO", {
+            "msg": f"RAPID on — was {current}, will return to it"})
+        return {"ok": True, "rapid": True, "active": "rapid_underlying",
+                "will_restore": current}
+
+    if not want and is_rapid:
+        back = state.get_meta("pre_rapid_strategy", "scalp_momentum")
+        if back in RAPID_VARIANTS or back not in strategy.REGISTRY:
+            back = "scalp_momentum"
+        state.set_meta("strategy", back)
+        state.append_activity("INFO", {"msg": f"RAPID off — restored {back}"})
+        return {"ok": True, "rapid": False, "active": back}
+
+    # Already in the requested state: report, change nothing.
+    return {"ok": True, "rapid": is_rapid, "active": current,
+            "note": "already in that state"}
+
+
 @app.post("/control/sources")
 async def control_sources(payload: dict):
     """Restrict which venues the desk trades: india, us, crypto.
