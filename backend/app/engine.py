@@ -533,6 +533,16 @@ class Engine:
         # book.
         forced = set(state.get_meta("force_close", []) or [])
         for t in state.open_trades():
+            # Pair legs are NOT managed here. A pair is one decision producing
+            # two legs that hedge each other, and it is market-neutral only
+            # while both exist. Applying a per-leg stop here closed the
+            # BANKNIFTY side of pair 570f061e01 at -Rs 8,469 on 2026-11-19 and
+            # left the NIFTY side running naked — a directional bet nobody
+            # chose. pair_engine.manage_pairs() exits both together on the
+            # z-score, which is the only exit that makes sense for a pair.
+            # An operator force-close still applies: that is deliberate.
+            if t.get("pair_id") and t["id"] not in forced:
+                continue
             # Pin the mark's IV to the entry premium so the position can only
             # move on spot and time — not on IV re-estimation noise.
             mark = options.requote_mark(
