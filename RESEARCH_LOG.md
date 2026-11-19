@@ -1435,3 +1435,75 @@ regime, not a sample of the strategy.
 
 Five signal families tested, five dead: intraday momentum, mean reversion, pair
 spread, overnight drift, cross-sectional ranking.
+
+## 2026-11-19 — Cross-sectional momentum on 200 NSE stocks: killed by a measurable bias
+
+Followed the literature this time rather than my own hypotheses. Novy-Marx and
+Velikov: anomalies with one-sided monthly turnover under 50% mostly survive
+costs; high-turnover ones do not. Every family tested this week was
+high-turnover, which is why they all died on the round trip.
+
+So: the documented specification. 12-1 momentum, 200 NSE F&O stocks, long top
+decile / short bottom decile, monthly rebalance, 120 months.
+
+```
+variant                  total %   mean/mo %      t     n
+12-1 momentum            +145.27      1.371    2.10   106
+6-1 momentum             +181.64      1.622    2.85   112
+12-1 no skip             +196.54      1.837    2.87   107
+shuffled baseline          -3.66
+
+consecutive halves (12-1):
+  2016-12..2021-12       +58.01%     1.26%    0.98    46
+  2021-12..2026-11       +80.66%     1.37%    2.24    59
+```
+
+Both halves positive, means 1.26% vs 1.37%, and these halves span genuinely
+different regimes — the first contains the COVID crash. This passed the test
+that the 2-year cross-sectional version failed this morning.
+
+### Then the decomposition
+```
+equal-weight universe    +198.50%   1.873%/mo   t 3.22
+long leg (top decile)    +310.64%   2.931%/mo   t 4.37
+short leg (bottom)       +154.76%   1.460%/mo   t 1.71
+spread                   +155.87%   1.471%/mo   t 2.25
+
+long beats universe by  +1.058%/mo
+universe beats short by +0.413%/mo
+```
+
+Two problems. The short leg RISES 1.46%/month — you would be shorting stocks
+that go up, paying financing to do it, and the market-neutral framing hides
+that. And the spread is carried 2.5-to-1 by the long leg, which is exactly
+where survivorship bias lands.
+
+### The measurement that killed it
+```
+                    total      per year
+NIFTY 50           211.1%       12.02%
+NIFTY 500          241.5%       13.07%
+MY UNIVERSE        773.2%       24.42%   equal-weight, 200 F&O stocks
+```
+
+The universe returns 24.4%/yr against the NIFTY 500's 13.1% — nearly double
+the broad market for a decade. Equal-weighting tilts small, but not by eleven
+points a year. That gap is survivorship bias, quantified: these 200 are the
+companies that grew enough to ENTER the F&O segment and stay in it, backfilled
+ten years.
+
+The momentum spread sits inside a universe whose whole return is overstated by
+roughly the magnitude of the spread, and the spread comes from the long leg
+drawn out of that pool. The two cannot be separated with this data.
+
+**Verdict: fails.** Not because a test rejected it — none did. Because the one
+thing I could not test turned out to be measurable by comparing the universe
+against the actual index, and it is large enough to account for the result.
+
+Settling it needs point-in-time constituent data: actual F&O membership as it
+stood each month since 2016, including companies since removed. AngelOne's
+master carries only today's. That data is commercial.
+
+Six signal families, six dead. This one got furthest: it passed shuffled-rank
+baselines, passed split-half across different regimes, and matched published
+literature.

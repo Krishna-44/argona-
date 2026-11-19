@@ -79,8 +79,36 @@ def live_z(spot_nifty: float | None = None, spot_bank: float | None = None) -> d
                        "long_bank_short_nifty" if z <= -ENTRY_Z else "none")}
 
 
+def _deployed_capital(state, engine_mod) -> float:
+    """Capital the open book already ties up — futures at margin, cash in full.
+
+    Mirrors the calculation in engine._open_trade. The pair book has to honour
+    the same book-wide ceiling as everything else, and until 2026-11-19 it did
+    not: two legs at ~Rs 2L of margin each opened on top of an already-loaded
+    book and took deployment to 139.8% of capital against an 80% cap. Sizing a
+    pair from RISK_PCT alone is not a capital check.
+    """
+    total = 0.0
+    for t in state.open_trades():
+        mr = 0.12 if (t.get("segment") == "futures") else 1.0
+        total += float(t["entry_premium"]) * float(t["qty"]) * mr
+    return total
+
+
 def open_pair(state, options, engine_mod, z_info: dict, balance: float) -> str | None:
     """Open both legs together, tagged with one pair_id."""
+    # Book-wide capital gate, same ceiling the per-instrument engine honours.
+    # A pair needs margin for BOTH legs, so it is refused unless there is room
+    # for the pair as a whole — opening one leg and discovering the second will
+    # not fit is the naked-exposure case this strategy exists to avoid.
+    deployed = _deployed_capital(state, engine_mod)
+    room = engine_mod.MAX_DEPLOYED_PCT * balance - deployed
+    if room <= 0:
+        state.append_activity("INFO", {
+            "msg": (f"pair skipped: book already uses Rs {deployed:,.0f} of the "
+                    f"Rs {engine_mod.MAX_DEPLOYED_PCT * balance:,.0f} capital limit")})
+        return None
+
     short_bank = z_info["z"] > 0
     pid = uuid.uuid4().hex[:10]
     legs = [("BANKNIFTY", "put" if short_bank else "call"),
@@ -102,6 +130,21 @@ def open_pair(state, options, engine_mod, z_info: dict, balance: float) -> str |
         per_unit = max(entry * band, 1e-9)
         want = (RISK_PCT * balance * 0.5) / per_unit
         qty = max(lot, (want // lot) * lot)
+        # Cap the leg by the capital it would consume. Half the remaining room
+        # per leg, because the other leg needs the other half. Without this the
+        # risk-based size alone could be any multiple of the book: on
+        # 2026-11-19 two legs took Rs 4,23,496 of margin — 91% of capital — on
+        # top of a book that was already loaded.
+        cap_per_leg = max(0.0, room * 0.5)
+        capital_per_unit = max(entry * 0.12, 1e-9)       # futures margin
+        max_qty = (cap_per_leg / capital_per_unit // lot) * lot
+        if max_qty < lot:
+            state.append_activity("INFO", {
+                "msg": (f"pair skipped: one {sym} lot needs Rs "
+                        f"{lot * capital_per_unit:,.0f} of margin, only Rs "
+                        f"{cap_per_leg:,.0f} free per leg")})
+            break
+        qty = min(qty, max_qty)
         tp = entry * (1 + options.premium_band(q, engine_mod.TP_SPOT_PCT))
         sl = entry * (1 - band)
         tid = state.open_trade(
