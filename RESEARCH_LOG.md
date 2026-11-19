@@ -1322,3 +1322,59 @@ remains the right call: five settled trades is thin, but it is evidence, while
 four unrealised marks are not.
 
 **Balance Rs 4,81,105.46, 8W/16L.** Still no validated edge anywhere.
+
+## 2026-11-19 — Overnight drift: a real effect, still smaller than its own cost
+
+Fourth signal family tested, and the first one that is genuinely present in the
+data rather than absent. Close-to-open vs open-to-close, daily bars, 2 years:
+
+```
+sym         days  overnight %  intraday %   total %  ovn t-stat
+NIFTY        494        11.69       -2.05      9.64        0.85
+BANKNIFTY    493        -1.10       25.11     24.02       -0.07
+SPY          500        20.29        6.36     26.65        1.40
+QQQ          500        27.66        5.65     33.31        1.38
+DAX          505        28.42        5.23     33.65        1.46
+FTSE         505         0.06       27.84     27.90        0.83
+```
+
+For SPY, QQQ and DAX the overnight session carries 3-5x the intraday return,
+which matches the published overnight-drift anomaly. BANKNIFTY and FTSE are the
+reverse. No t-stat reaches 1.96 even before correcting for six instruments.
+
+**Trading it requires one round trip per day**, so the test is per-day gain
+against per-day cost:
+
+```
+sym         ovn/day %  cost/day %  edge/day %   per year
+NIFTY         0.0237     0.0500     -0.0263      -6.58%
+BANKNIFTY    -0.0022     0.0500     -0.0522     -13.06%
+SPY           0.0406     0.0500     -0.0094      -2.36%
+QQQ           0.0553     0.0500     +0.0053      +1.33%
+DAX           0.0563     0.0500     +0.0063      +1.57%
+FTSE          0.0001     0.0500     -0.0499     -12.47%
+```
+
+Two clear their cost, by 1.33% and 1.57% a year, on t-stats of 1.38 and 1.46.
+Against buy-and-hold over the identical window with ONE round trip instead of
+500: DAX +35.03%, SPY +26.55%, NIFTY +7.95%.
+
+The effect is real and an order of magnitude smaller than the cost of
+harvesting it.
+
+### The wall, stated plainly
+Four signal families now — intraday momentum, mean reversion, pair spread,
+overnight drift — all die on the same arithmetic. The round trip is 0.05% of
+notional on the underlying and 4.5-14% of premium on options. That figure is
+brokerage, exchange fees, GST, stamp and spread; it is not a modelling choice
+and no model changes it.
+
+The only two levers that move it are fewer round trips (holding, which is beta
+and needs months) or lower costs (institutional, not retail). Adding an LLM or
+an MCP moves neither, which the phi3 proposals already demonstrated: nine
+generated, nine failed, and it proposed TIGHTER stops immediately after being
+told in its own context that tighter stops measure worse.
+
+Asked today to "do something, add an MCP, use any model" to produce profit.
+Tested a new signal family instead of agreeing or refusing. It failed, and the
+reason it failed is the same reason the other three did.
