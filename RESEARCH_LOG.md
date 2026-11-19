@@ -1378,3 +1378,60 @@ told in its own context that tighter stops measure worse.
 Asked today to "do something, add an MCP, use any model" to produce profit.
 Tested a new signal family instead of agreeing or refusing. It failed, and the
 reason it failed is the same reason the other three did.
+
+## 2026-11-19 — Cross-sectional ranking, and a flaw in my own validation
+
+Fifth signal family. Long the top-5 by trailing return, short the bottom-5,
+rebalanced monthly — attractive because it is RELATIVE (does not need the
+market to rise) and turns over ~12 times a year rather than 500, so the round
+trip that killed the other four is not fatal on arrival.
+
+**On 2 years (20 instruments, 393 days) it looked like the best result of the
+week:**
+
+```
+lookback 21d, hold 21d, k=5    +71.10% total, mean 4.18%, t 1.63
+shuffled-rank baseline          -6.20%
+crypto excluded                +43.63%
+split-half   first  +18.35% (mean 2.29%)
+             second +19.22% (mean 2.14%)
+```
+
+Both halves positive with near-identical means. Nothing else in this project
+had survived split-half.
+
+**On 9 years (19 instruments, 1796 days, 84 periods) it dies:**
+
+```
+all 19 instruments      +58.77%   mean  0.700%   t  0.61
+crypto excluded (17)    -23.17%   mean -0.276%   t -0.35
+shuffled baseline        -1.79%
+
+thirds:
+  2017-11..2020-11      -27.40%   mean -1.01%    t -0.54
+  2020-11..2023-11      +82.99%   mean  2.96%    t  1.53
+  2023-11..2026-11      +89.95%   mean  3.21%    t  2.67
+```
+
+Without crypto, nine years LOSES money. The whole positive result is being
+short BTC and ETH through their drawdowns — a directional crypto bet in a
+cross-sectional costume. The first third is negative outright.
+
+### The methodological failure is mine, and it affects everything above
+The 2-year split-half PASSED. It passed because both halves sat inside the
+same favourable regime: splitting 2024-2026 in two yields two samples of one
+crypto drawdown. The test had no power to detect what nine years shows at a
+glance.
+
+Split-half guards against fitting noise WITHIN a window. It does nothing
+against choosing a lucky window. Every candidate run through that gate this
+week shares the blind spot — it simply never mattered this much before, because
+the others failed on cost before regime selection could flatter them.
+
+**Correction to method, applied from here:** a candidate must be tested across
+the longest history available and reported by consecutive sub-periods, not
+split in two within whatever window was convenient. Two years is a sample of a
+regime, not a sample of the strategy.
+
+Five signal families tested, five dead: intraday momentum, mean reversion, pair
+spread, overnight drift, cross-sectional ranking.
